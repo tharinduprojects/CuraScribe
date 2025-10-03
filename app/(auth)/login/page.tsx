@@ -17,14 +17,6 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-
-          </div>
-        </div>
-
-        {/* Login Form Card */}
         <div className="p-8">
           <img src="/assets/logoLarge.png" className='mx-auto mb-8' alt="" />
           <div className="text-center mb-6">
