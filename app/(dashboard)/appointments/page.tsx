@@ -1,10 +1,13 @@
 'use client';
 
-import { Table, Button, Tag } from 'antd';
+import { Table, Button, Tag, message } from 'antd';
 import { Calendar, Grid3x3, CalendarDays, TrendingUp } from 'lucide-react';
 import type { ColumnsType } from 'antd/es/table';
 import { AppstoreOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import api from '@/app/lib/axios';
+import dayjs from 'dayjs';
 
 interface AppointmentData {
   key: string;
@@ -17,6 +20,9 @@ interface AppointmentData {
 
 export default function AppointmentsPage() {
   const router = useRouter();
+  const [appointments, setAppointments] = useState<AppointmentData[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const statsCards = [
     {
       icon: <Calendar className="w-8 h-8 text-white" />,
@@ -49,7 +55,7 @@ export default function AppointmentsPage() {
       title: 'Date & Time',
       dataIndex: 'time',
       key: 'time',
-      width: 150,
+      width: 180,
     },
     {
       title: 'Patient',
@@ -73,13 +79,13 @@ export default function AppointmentsPage() {
       key: 'status',
       width: 150,
       render: (status: string) => {
-        let color = 'default';
-        if (status === 'Scheduled') color = 'blue';
-        if (status === 'Pending') color = 'orange';
-        if (status === 'Confirmed') color = 'green';
-        if (status === 'Cancelled') color = 'default';
+        let color: string = 'default';
+        if (status.toLowerCase() === 'scheduled') color = 'blue';
+        if (status.toLowerCase() === 'pending') color = 'orange';
+        if (status.toLowerCase() === 'confirmed') color = 'green';
+        if (status.toLowerCase() === 'cancelled') color = 'red';
 
-        return <Tag color={color}>{status}</Tag>;
+        return <Tag color={color}>{status.charAt(0).toUpperCase() + status.slice(1)}</Tag>;
       },
     },
     {
@@ -92,48 +98,35 @@ export default function AppointmentsPage() {
     },
   ];
 
-  const data: AppointmentData[] = [
-    {
-      key: '1',
-      time: '10:30am',
-      patient: 'Sarah Johnson',
-      type: 'General Checkup',
-      duration: '30 min',
-      status: 'Scheduled',
-    },
-    {
-      key: '2',
-      time: '11:00am',
-      patient: 'Michael Chen',
-      type: 'Follow-up',
-      duration: '30 min',
-      status: 'Pending',
-    },
-    {
-      key: '3',
-      time: '11:30am',
-      patient: 'Emma Davis',
-      type: 'Emergency',
-      duration: '30 min',
-      status: 'Confirmed',
-    },
-    {
-      key: '4',
-      time: '12:00pm',
-      patient: 'Liam Johnson',
-      type: 'General Checkup',
-      duration: '30 min',
-      status: 'Cancelled',
-    },
-    {
-      key: '5',
-      time: '12:30pm',
-      patient: 'Sophia Brown',
-      type: 'General Checkup',
-      duration: '30 min',
-      status: 'Confirmed',
-    },
-  ];
+  // ✅ Fetch Appointments from API
+  const fetchAppointments = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/appointments'); // calls http://18.188.189.85:8000/api/appointments
+      if (data?.success) {
+        const formatted = data.appointments.map((item: any) => ({
+          key: String(item.id),
+          time: `${dayjs(item.appointment_date).format('MMM DD, YYYY')} ${dayjs(item.appointment_time, 'HH:mm:ss').format('hh:mm A')}`,
+          patient: `${item.first_name} ${item.last_name}`.trim(),
+          type: item.appointment_type,
+          duration: '30 min', // you can update this if API provides duration
+          status: item.status,
+        }));
+        setAppointments(formatted);
+      } else {
+        message.error('Failed to fetch appointments');
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      message.error('Error fetching appointments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
   return (
     <div>
@@ -177,16 +170,17 @@ export default function AppointmentsPage() {
               type="primary"
               onClick={() => router.push('/appointments/add-appointments')}
             >
-              Add New Patient
+              Schedule New
             </Button>
           </div>
         </div>
 
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={appointments}
+          loading={loading}
           pagination={{
-            pageSize: 5,
+            pageSize: 10,
             showSizeChanger: false,
             position: ['bottomCenter'],
             itemRender: (page, type, originalElement) => {

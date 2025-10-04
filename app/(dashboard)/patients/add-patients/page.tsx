@@ -7,22 +7,18 @@ import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import api from '@/app/lib/axios';
 import { SmileOutlined } from '@ant-design/icons';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const { TextArea } = Input;
 
 export default function AddPatientForm() {
+  const [loading, setLoading] = useState(false);
+  const [notify, contextHolder] = notification.useNotification();
   const [form] = Form.useForm();
   const router = useRouter();
 
-  useEffect(() => {
-    notification.config({
-      placement: 'topRight', // default placement
-      duration: 4.5, // auto close in seconds
-    });
-  }, []);
-
   const onFinish = async (values: any) => {
+    setLoading(true);
     try {
       const payload = {
         first_name: values.firstName || '',
@@ -56,33 +52,37 @@ export default function AddPatientForm() {
         pharmacy_address: values.pharmacyAddress || '',
       };
 
+      const res = await api.post('/patients', payload);
 
-      // const res = await api.post('/patients', payload);
-
-      // if (res.status === 201 || res.data.success) {
-      //   message.success('Patient added successfully');
-      // } else {
-      //   message.error('Failed to add patient');
-      // }
+      if (res.status === 201 || res.data.success) {
+        notify.success({
+          message: 'Patient Added Successfully',
+          description: 'Can view patients in Patient Management',
+          duration: 3,
+        });
+      } else {
+        message.error('Failed to add patient');
+        notify.error({
+          message: 'Patient adding failed',
+          description: 'Something went wrong adding patient',
+          duration: 3,
+        });
+      }
     } catch (error: any) {
       console.error(error);
-      message.error(error.response?.data?.message || 'Error creating patient');
+      notify.error({
+        message: 'Patient adding failed',
+        description: 'Something went wrong adding patient',
+        duration: 3,
+      });
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const openNotification = () => {
-
-    console.log('ssss');
-
-    notification.open({
-      message: 'Notification Title',
-      description: 'This is the content of the notification.',
-    });
   };
 
   return (
     <div>
-      {/* Header */}
+      {contextHolder}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Link href="/patients" className="text-gray-600 hover:text-gray-800">
@@ -99,11 +99,9 @@ export default function AddPatientForm() {
             type="primary"
             className="bg-purple-600"
             onClick={() => form.submit()}
+            loading={loading}
           >
             Save Patient
-          </Button>
-          <Button type="primary" onClick={openNotification}>
-            Open Notification
           </Button>
         </div>
       </div>

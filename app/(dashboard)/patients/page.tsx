@@ -108,14 +108,14 @@ export default function PatientManagementPage() {
       <div className="bg-white rounded-lg">
         {loading ? (
           <div className="flex justify-center py-10">
-            <Spin size="large" />
+            <Spin size="small" />
           </div>
         ) : (
           <Table
             columns={columns}
             dataSource={patients}
             pagination={{
-              pageSize: 7,
+              pageSize: 20,
               showSizeChanger: false,
               position: ['bottomCenter'],
               showTotal: (total, range) =>
