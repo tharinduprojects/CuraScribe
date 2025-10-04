@@ -1,16 +1,83 @@
 'use client';
 
-import { Form, Input, Select, DatePicker, Button, Row, Col } from 'antd';
+import { Form, Input, Select, DatePicker, Button, Row, Col, message, notification } from 'antd';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import dayjs from 'dayjs';
+import api from '@/app/lib/axios';
+import { SmileOutlined } from '@ant-design/icons';
+import { useEffect } from 'react';
 
 const { TextArea } = Input;
 
 export default function AddPatientForm() {
   const [form] = Form.useForm();
+  const router = useRouter();
 
-  const onFinish = (values: any) => {
-    console.log('Form values:', values);
+  useEffect(() => {
+    notification.config({
+      placement: 'topRight', // default placement
+      duration: 4.5, // auto close in seconds
+    });
+  }, []);
+
+  const onFinish = async (values: any) => {
+    try {
+      const payload = {
+        first_name: values.firstName || '',
+        last_name: values.lastName || '',
+        date_of_birth: values.dateOfBirth ? dayjs(values.dateOfBirth).format('YYYY-MM-DD') : null,
+        gender: values.gender || null,
+        phone: values.phoneNumber || '',
+        email: values.email || '',
+        address: values.streetAddress || '',
+        city: values.city || '',
+        state: values.state || '',
+        zip_code: values.zipCode || '',
+        medical_history: values.medicalHistory || '',
+        chief_complaint: values.chiefComplaint || '',
+        hpi: values.historyOfPresentIllness || '',
+        medications: values.medications || '',
+        allergies: values.allergies || '',
+        past_med_history: values.pastMedicationHistory || '',
+        other_med_hx: values.otherMedicalHistory || '',
+        pain_history: values.pmhHistory || '',
+        surgical_hx: values.surgeries || '',
+        family_hx: values.familyHistory || '',
+        sexual_hx: values.socialHistory || '',
+        drug_use: values.workLife || '',
+        employment: values.environment || '',
+        education: values.provider || '',
+        insurance_id: values.insuranceId || '',
+        insurance_company: values.insuranceCompany || '',
+        pharmacy_name: values.pharmacyName || '',
+        pharmacy_phone: values.pharmacyPhone || '',
+        pharmacy_address: values.pharmacyAddress || '',
+      };
+
+
+      // const res = await api.post('/patients', payload);
+
+      // if (res.status === 201 || res.data.success) {
+      //   message.success('Patient added successfully');
+      // } else {
+      //   message.error('Failed to add patient');
+      // }
+    } catch (error: any) {
+      console.error(error);
+      message.error(error.response?.data?.message || 'Error creating patient');
+    }
+  };
+
+  const openNotification = () => {
+
+    console.log('ssss');
+
+    notification.open({
+      message: 'Notification Title',
+      description: 'This is the content of the notification.',
+    });
   };
 
   return (
@@ -27,25 +94,29 @@ export default function AddPatientForm() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button>Cancel</Button>
-          <Button type="primary" className="bg-purple-600" onClick={() => form.submit()}>
+          <Button onClick={() => router.push('/patients')}>Cancel</Button>
+          <Button
+            type="primary"
+            className="bg-purple-600"
+            onClick={() => form.submit()}
+          >
             Save Patient
+          </Button>
+          <Button type="primary" onClick={openNotification}>
+            Open Notification
           </Button>
         </div>
       </div>
 
-      <div className='bg-gray-100 p-5 rounded-lg'>
+      {/* Dictation Section */}
+      <div className='bg-gray-100 p-5 rounded-lg mb-6'>
         <div className='flex items-end gap-3'>
           <div className='w-full'>
             <label htmlFor="basic-usage">Select a field and click Start Dictation</label>
             <Input placeholder="Basic usage" />
           </div>
           <div className='flex gap-3'>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-            >
+            <Button type="primary" htmlType="submit" block>
               Start Dictation
             </Button>
             <Button>Stop</Button>
@@ -53,19 +124,13 @@ export default function AddPatientForm() {
         </div>
       </div>
 
+      {/* Main Form */}
       <div className="bg-white rounded-lg p-6">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+
           {/* Patient Info Section */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Patient Info</h2>
-            </div>
-
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Patient Info</h2>
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="First Name" name="firstName" rules={[{ required: true }]}>
@@ -86,7 +151,7 @@ export default function AddPatientForm() {
 
             <Row gutter={16}>
               <Col span={8}>
-                <Form.Item label="Gender" name="gender" rules={[{ required: true }]}>
+                <Form.Item label="Gender" name="gender">
                   <Select placeholder="Select gender">
                     <Select.Option value="male">Male</Select.Option>
                     <Select.Option value="female">Female</Select.Option>
@@ -95,12 +160,12 @@ export default function AddPatientForm() {
                 </Form.Item>
               </Col>
               <Col span={8}>
-                <Form.Item label="Phone Number" name="phoneNumber" rules={[{ required: true }]}>
+                <Form.Item label="Phone Number" name="phoneNumber">
                   <Input placeholder="(555) 123-4567" />
                 </Form.Item>
               </Col>
               <Col span={8}>
-                <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email' }]}>
+                <Form.Item label="Email" name="email">
                   <Input placeholder="patient@e.com" />
                 </Form.Item>
               </Col>
@@ -109,7 +174,7 @@ export default function AddPatientForm() {
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="Street Address" name="streetAddress">
-                  <Input placeholder="City" />
+                  <Input placeholder="Street" />
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -126,11 +191,6 @@ export default function AddPatientForm() {
 
             <Row gutter={16}>
               <Col span={8}>
-                <Form.Item label="Address" name="address">
-                  <Input placeholder="12345" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
                 <Form.Item label="ZIP Code" name="zipCode">
                   <Input placeholder="12345" />
                 </Form.Item>
@@ -145,7 +205,6 @@ export default function AddPatientForm() {
           {/* Initial Encounter Section */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Initial Encounter</h2>
-
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item label="CC (Chief Complaint)" name="chiefComplaint">
@@ -215,11 +274,10 @@ export default function AddPatientForm() {
           {/* Social Hx Section */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Social Hx</h2>
-
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="Work life" name="workLife">
-                  <Input placeholder="Tobacco use(1, recreational drugs..." />
+                  <Input placeholder="Tobacco use(1), recreational drugs..." />
                 </Form.Item>
               </Col>
               <Col span={8}>
@@ -251,7 +309,6 @@ export default function AddPatientForm() {
           {/* Pharmacy Details Section */}
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Pharmacy Details</h2>
-
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item label="Pharmacy Name" name="pharmacyName">

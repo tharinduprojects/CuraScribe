@@ -1,120 +1,99 @@
 'use client';
 
-import { Table, Button, Input } from 'antd';
+import { useEffect, useState } from 'react';
+import { Table, Button, Input, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 interface PatientData {
   key: string;
   id: string;
   name: string;
-  age: number;
+  age: number | string;
   contact: string;
   lastVisit: string;
 }
 
 export default function PatientManagementPage() {
-
   const router = useRouter();
-  const columns: ColumnsType<PatientData> = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age',
-      width: 100,
-    },
-    {
-      title: 'Contact',
-      dataIndex: 'contact',
-      key: 'contact',
-    },
-    {
-      title: 'Last Visit',
-      dataIndex: 'lastVisit',
-      key: 'lastVisit',
-    },
-  ];
+  const [allPatients, setAllPatients] = useState<PatientData[]>([]);
+  const [patients, setPatients] = useState<PatientData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const data: PatientData[] = [
-    {
-      key: '1',
-      id: '#001',
-      name: 'John smith',
-      age: 34,
-      contact: '(555) 999-0000',
-      lastVisit: 'Sep 04, 2025',
-    },
-    {
-      key: '2',
-      id: '#005',
-      name: 'Alice Johnson',
-      age: 35,
-      contact: '(555) 999-0001',
-      lastVisit: 'Sep 05, 2025',
-    },
-    {
-      key: '3',
-      id: '#002',
-      name: 'Michael Brown',
-      age: 34,
-      contact: '(555) 999-0000',
-      lastVisit: 'Sep 06, 2025',
-    },
-    {
-      key: '4',
-      id: '#003',
-      name: 'John smith',
-      age: 37,
-      contact: '(555) 999-0003',
-      lastVisit: 'Sep 04, 2025',
-    },
-    {
-      key: '5',
-      id: '#001',
-      name: 'Christopher Wilson',
-      age: 36,
-      contact: '(555) 999-0002',
-      lastVisit: 'Sep 08, 2025',
-    },
-    {
-      key: '6',
-      id: '#004',
-      name: 'Emily Davis',
-      age: 38,
-      contact: '(555) 999-0004',
-      lastVisit: 'Sep 07, 2025',
-    },
-    {
-      key: '7',
-      id: '#006',
-      name: 'Sarah Martinez',
-      age: 39,
-      contact: '(555) 999-0005',
-      lastVisit: 'Sep 09, 2025',
-    },
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/patients`);
+
+        if (res.data.success && Array.isArray(res.data.patients)) {
+          const mappedData: PatientData[] = res.data.patients.map((p: any) => ({
+            key: String(p.id),
+            id: `#${p.id}`,
+            name: `${p.first_name} ${p.last_name}`.trim(),
+            age: p.date_of_birth
+              ? new Date().getFullYear() - new Date(p.date_of_birth).getFullYear()
+              : 'N/A',
+            contact: p.phone || p.email || 'N/A',
+            lastVisit: p.updated_at
+              ? new Date(p.updated_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+              : 'N/A',
+          }));
+          setAllPatients(mappedData);
+          setPatients(mappedData); // full list initially
+        }
+      } catch (error) {
+        console.error('Error fetching patients:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const filtered = allPatients.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.id.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setPatients(filtered);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchTerm, allPatients]);
+
+  const columns: ColumnsType<PatientData> = [
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 100 },
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Age', dataIndex: 'age', key: 'age', width: 100 },
+    { title: 'Contact', dataIndex: 'contact', key: 'contact' },
+    { title: 'Last Visit', dataIndex: 'lastVisit', key: 'lastVisit' },
   ];
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap">Patient Management</h1>
+        <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap">
+          Patient Management
+        </h1>
         <div className="flex gap-3">
           <Input
-            placeholder="Search"
+            placeholder="Search by name, ID, or contact"
             prefix={<SearchOutlined className="text-gray-400" />}
             className="w-64"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
           <Button>Export</Button>
           <Button
@@ -127,26 +106,32 @@ export default function PatientManagementPage() {
       </div>
 
       <div className="bg-white rounded-lg">
-
-        <Table
-          columns={columns}
-          dataSource={data}
-          pagination={{
-            pageSize: 7,
-            showSizeChanger: false,
-            position: ['bottomCenter'],
-            showTotal: (total, range) => `Page ${range[0]} of ${Math.ceil(total / 7)}`,
-            itemRender: (page, type, originalElement) => {
-              if (type === 'prev') {
-                return <Button>Previous</Button>;
-              }
-              if (type === 'next') {
-                return <Button>Next</Button>;
-              }
-              return originalElement;
-            },
-          }}
-        />
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Spin size="large" />
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            dataSource={patients}
+            pagination={{
+              pageSize: 7,
+              showSizeChanger: false,
+              position: ['bottomCenter'],
+              showTotal: (total, range) =>
+                `Page ${range[0]} of ${Math.ceil(total / 7)}`,
+              itemRender: (page, type, originalElement) => {
+                if (type === 'prev') {
+                  return <Button>Previous</Button>;
+                }
+                if (type === 'next') {
+                  return <Button>Next</Button>;
+                }
+                return originalElement;
+              },
+            }}
+          />
+        )}
       </div>
     </div>
   );
