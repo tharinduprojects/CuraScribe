@@ -137,10 +137,9 @@ export default function AddPrescriptionsPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Add New Prescriptions</h1>
           <div className="flex gap-3">
-            <Button size="large">Cancel</Button>
+            <Button>Cancel</Button>
             <Button
               type="primary"
-              size="large"
               className="bg-purple-600"
               onClick={() => form.submit()}
             >

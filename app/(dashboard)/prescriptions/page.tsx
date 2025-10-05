@@ -138,10 +138,10 @@ const PrescriptionsPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Prescriptions</h1>
         <div className="flex gap-3">
-          <Button size="large" className="border-gray-300">
+          <Button className="border-gray-300">
             Export
           </Button>
-          <Button type="primary" size="large" className="bg-indigo-600 hover:bg-indigo-700">
+          <Button type="primary" className="bg-indigo-600 hover:bg-indigo-700">
             New Prescription
           </Button>
         </div>
