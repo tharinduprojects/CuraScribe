@@ -124,7 +124,6 @@ export default function ScheduleAppointmentForm() {
             </Button>
             <Button
               type="primary"
-              size="large"
               className="bg-purple-600"
               onClick={() => form.submit()}
               loading={submitting}
