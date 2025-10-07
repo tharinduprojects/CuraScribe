@@ -1,37 +1,115 @@
-import React from 'react';
-import { Table, Button } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Input, message, Space } from 'antd';
+import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import api from '@/app/lib/axios';
+import { SortOrder } from 'antd/es/table/interface';
 
 interface Prescription {
-  key: string;
-  id: string;
-  patient: string;
-  medication: string;
+  id: number;
+  first_name: string;
+  last_name: string;
+  medication_name: string;
   dosage: string;
   frequency: string;
-  doctor: string;
-  date: string;
+  doctor_name: string;
+  created_at: Date;
 }
 
-const PrescriptionsPage: React.FC = () => {
-  const columns: ColumnsType<Prescription> = [
+
+const { Search } = Input;
+
+export default function PrescriptionsPage() {
+  const router = useRouter();
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    fetchPrescriptions();
+  }, []);
+
+  const fetchPrescriptions = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/prescriptions');
+
+      if (response.data.success && Array.isArray(response.data.prescriptions)) {
+        setPrescriptions(response.data.prescriptions);
+      } else {
+        console.error('Invalid data format received');
+        setPrescriptions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+      setPrescriptions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewPrescription = () => {
+    router.push('/prescriptions/add-prescription');
+  };
+
+  const handleExport = () => {
+    // Convert prescriptions to CSV
+    const headers = ['ID', 'Patient', 'Medication', 'Dosage', 'Frequency', 'Doctor', 'Date'];
+    const csvData = prescriptions.map(p => [
+      p.id,
+      `${p.first_name} ${p.last_name}`,
+      p.medication_name,
+      p.dosage,
+      p.frequency,
+      p.doctor_name,
+      new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+    ]);
+
+    const csv = [
+      headers.join(','),
+      ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prescriptions.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+    message.success('Prescriptions exported successfully');
+  };
+
+  const columns = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 80,
+      render: (id: any) => `#${String(id).padStart(3, '0')}`,
+      sorter: (a: { id: number; }, b: { id: number; }) => a.id - b.id,
     },
     {
       title: 'Patient',
-      dataIndex: 'patient',
       key: 'patient',
-      width: 150,
+      width: 180,
+      render: (_: any, record: { first_name: any; last_name: any; }) => `${record.first_name} ${record.last_name}`,
+      sorter: (a: { first_name: any; last_name: any; }, b: { first_name: any; last_name: any; }) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      },
     },
     {
       title: 'Medication',
-      dataIndex: 'medication',
-      key: 'medication',
-      width: 150,
+      dataIndex: 'medication_name',
+      key: 'medication_name',
+      width: 180,
+      sorter: (a: { medication_name: any; }, b: { medication_name: any; }) => (a.medication_name || '').localeCompare(b.medication_name || ''),
     },
     {
       title: 'Dosage',
@@ -43,125 +121,103 @@ const PrescriptionsPage: React.FC = () => {
       title: 'Frequency',
       dataIndex: 'frequency',
       key: 'frequency',
-      width: 150,
+      width: 180,
     },
     {
       title: 'Doctor',
-      dataIndex: 'doctor',
-      key: 'doctor',
-      width: 150,
+      dataIndex: 'doctor_name',
+      key: 'doctor_name',
+      width: 180,
+      sorter: (a: { doctor_name: any; }, b: { doctor_name: any; }) => (a.doctor_name || '').localeCompare(b.doctor_name || ''),
     },
     {
       title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
-      width: 130,
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 150,
+      render: (date: string | number | Date) => new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+      }),
+      sorter: (a: { created_at: string | number | Date; }, b: { created_at: string | number | Date; }) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      defaultSortOrder: 'descend' as SortOrder, // Update the type here
     },
   ];
 
-  const data: Prescription[] = [
-    {
-      key: '1',
-      id: '#001',
-      patient: 'John smith',
-      medication: 'Versed',
-      dosage: '3mg',
-      frequency: 'N/A',
-      doctor: 'John smith',
-      date: 'Sep 04, 2025',
-    },
-    {
-      key: '2',
-      id: '#005',
-      patient: 'Alice Johnson',
-      medication: 'Sumatriptan',
-      dosage: '50mg',
-      frequency: 'As needed',
-      doctor: 'Alice Johnson',
-      date: 'Sep 05, 2025',
-    },
-    {
-      key: '3',
-      id: '#002',
-      patient: 'Michael Brown',
-      medication: 'Lisinopril',
-      dosage: '150mg',
-      frequency: 'Once daily',
-      doctor: 'Michael Brown',
-      date: 'Sep 06, 2025',
-    },
-    {
-      key: '4',
-      id: '#003',
-      patient: 'John smith',
-      medication: 'Zolmitriptan',
-      dosage: '200mg',
-      frequency: 'Three times a week',
-      doctor: 'John smith',
-      date: 'Sep 04, 2025',
-    },
-    {
-      key: '5',
-      id: '#001',
-      patient: 'Christopher Wilson',
-      medication: 'Rizatriptan',
-      dosage: '100mg',
-      frequency: 'Twice daily',
-      doctor: 'Christopher Wilson',
-      date: 'Sep 08, 2025',
-    },
-    {
-      key: '6',
-      id: '#004',
-      patient: 'Emily Davis',
-      medication: 'Naratriptan',
-      dosage: '250mg',
-      frequency: 'As needed',
-      doctor: 'Emily Davis',
-      date: 'Sep 07, 2025',
-    },
-    {
-      key: '7',
-      id: '#006',
-      patient: 'Sarah Martinez',
-      medication: 'Sumatriptan',
-      dosage: '50mg',
-      frequency: 'Once daily',
-      doctor: 'Sarah Martinez',
-      date: 'Sep 09, 2025',
-    },
-  ];
+  // Filter prescriptions based on search
+  const filteredPrescriptions = prescriptions.filter(prescription => {
+    const searchLower = searchText.toLowerCase();
+    const patientName = `${prescription.first_name} ${prescription.last_name}`.toLowerCase();
+    const medication = (prescription.medication_name || '').toLowerCase();
+    const doctor = (prescription.doctor_name || '').toLowerCase();
+
+    return (
+      patientName.includes(searchLower) ||
+      medication.includes(searchLower) ||
+      doctor.includes(searchLower) ||
+      prescription.dosage?.toLowerCase().includes(searchLower) ||
+      prescription.frequency?.toLowerCase().includes(searchLower) ||
+      `#${String(prescription.id).padStart(3, '0')}`.includes(searchLower)
+    );
+  });
 
   return (
-    <>
+    <div className="min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Prescriptions</h1>
-        <div className="flex gap-3">
-          <Button className="border-gray-300">
+        <h1 className="text-2xl font-semibold">Prescriptions</h1>
+        <Space>
+          <Input
+            placeholder="Search by name, ID, or contact"
+            prefix={<SearchOutlined className="text-gray-400" />}
+            className="w-64"
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+          >
             Export
           </Button>
-          <Button type="primary" className="bg-indigo-600 hover:bg-indigo-700">
+          <Button
+            type="primary"
+            onClick={handleNewPrescription}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
             New Prescription
           </Button>
-        </div>
+        </Space>
+      </div>
+
+      {/* Search */}
+      <div className="mb-4">
+
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg">
+      <div className="bg-white rounded-lg ">
         <Table
           columns={columns}
-          dataSource={data}
+          dataSource={filteredPrescriptions}
+          loading={loading}
+          rowKey="id"
           pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
+            current: currentPage,
+            pageSize: pageSize,
+            total: filteredPrescriptions.length,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} prescriptions`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
             position: ['bottomCenter'],
           }}
-          className="prescriptions-table"
+          scroll={{ x: 1200 }}
+          className="custom-table"
         />
       </div>
-    </>
+    </div>
   );
-};
-
-export default PrescriptionsPage;
+}
