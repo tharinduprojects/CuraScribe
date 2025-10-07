@@ -119,7 +119,7 @@ export default function ScheduleAppointmentForm() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Schedule New Appointment</h1>
           <div className="flex gap-3">
-            <Button size="large" onClick={() => backToAppointments()} disabled={submitting}>
+            <Button onClick={() => backToAppointments()} disabled={submitting}>
               Cancel
             </Button>
             <Button
@@ -134,7 +134,7 @@ export default function ScheduleAppointmentForm() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-6">
+      <div className="bg-white">
         <Form
           form={form}
           layout="vertical"
