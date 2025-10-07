@@ -15,7 +15,7 @@ export default function SOAPNotesForm() {
   const [patient, setPatient] = useState('');
   const [doctor, setDoctor] = useState('');
   const [transcript, setTranscript] = useState('');
-  const [patients, setPatients] = useState([]);
+  const [patients, setPatients] = useState<any[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
   const [searchPatient, setSearchPatient] = useState('');
   const [audioURL, setAudioURL] = useState('');
@@ -23,11 +23,11 @@ export default function SOAPNotesForm() {
   const [notify, contextHolder] = notification.useNotification();
 
 
-  const recognitionRef = useRef(null);
-  const recordingTimerRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const audioRef = useRef(null);
+  const recognitionRef = useRef<any>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const router = useRouter();
 
@@ -99,7 +99,7 @@ export default function SOAPNotesForm() {
         console.log('Fetched patients data:', data);
 
         // Handle response format: {success: true, patients: [...]}
-        const patientsArray = data.patients || data;
+        const patientsArray = data.patients || data as never[];
 
         console.log('Is array?', Array.isArray(patientsArray));
         console.log('Patient count:', patientsArray?.length);
@@ -120,7 +120,7 @@ export default function SOAPNotesForm() {
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
-      message.error(`Error loading patients: ${error.message}`);
+      // message.error(`Error loading patients: ${error.message}`);
       setPatients([]);
     } finally {
       setLoadingPatients(false);
@@ -141,7 +141,9 @@ export default function SOAPNotesForm() {
 
   const initializeSpeechRecognition = () => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      // const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -158,7 +160,7 @@ export default function SOAPNotesForm() {
           });
         };
 
-        recognition.onresult = (event) => {
+        recognition.onresult = (event: { resultIndex: any; results: string | any[]; }) => {
           let interimTranscript = '';
           let finalTranscript = '';
 
@@ -177,7 +179,7 @@ export default function SOAPNotesForm() {
           }
         };
 
-        recognition.onerror = (event) => {
+        recognition.onerror = (event: { error: string; }) => {
           console.error('Speech recognition error:', event.error);
           if (event.error === 'not-allowed') {
             message.error('Microphone access denied. Please allow microphone permissions.');
