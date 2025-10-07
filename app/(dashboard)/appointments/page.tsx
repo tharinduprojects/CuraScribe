@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import api from '@/app/lib/axios';
 import dayjs from 'dayjs';
+import AppointmentsCalendarPage from './appointmentCalendar';
 
 interface AppointmentData {
   key: string;
@@ -22,6 +23,7 @@ export default function AppointmentsPage() {
   const router = useRouter();
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list'); // 👈 tab-like state
 
   const statsCards = [
     {
@@ -98,7 +100,6 @@ export default function AppointmentsPage() {
     },
   ];
 
-  // ✅ Fetch Appointments from API
   const fetchAppointments = async () => {
     setLoading(true);
     try {
@@ -109,7 +110,7 @@ export default function AppointmentsPage() {
           time: `${dayjs(item.appointment_date).format('MMM DD, YYYY')} ${dayjs(item.appointment_time, 'HH:mm:ss').format('hh:mm A')}`,
           patient: `${item.first_name} ${item.last_name}`.trim(),
           type: item.appointment_type,
-          duration: '30 min', // you can update this if API provides duration
+          duration: '30 min',
           status: item.status,
         }));
         setAppointments(formatted);
@@ -159,13 +160,21 @@ export default function AppointmentsPage() {
         ))}
       </div>
 
-      {/* Appointments Table */}
+      {/* Appointments Header */}
       <div className="bg-white rounded-lg">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-800">Appointments</h2>
           <div className="flex gap-2">
-            <Button icon={<CalendarOutlined />} />
-            <Button icon={<AppstoreOutlined />} />
+            <Button
+              icon={<CalendarOutlined />}
+              type={viewMode === 'calendar' ? 'primary' : 'default'}
+              onClick={() => setViewMode('calendar')}
+            />
+            <Button
+              icon={<AppstoreOutlined />}
+              type={viewMode === 'list' ? 'primary' : 'default'}
+              onClick={() => setViewMode('list')}
+            />
             <Button
               type="primary"
               onClick={() => router.push('/appointments/add-appointments')}
@@ -175,25 +184,30 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={appointments}
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
-            position: ['bottomCenter'],
-            itemRender: (page, type, originalElement) => {
-              if (type === 'prev') {
-                return <Button>Previous</Button>;
-              }
-              if (type === 'next') {
-                return <Button>Next</Button>;
-              }
-              return originalElement;
-            },
-          }}
-        />
+        {/* Conditional Rendering Based on Selected View */}
+        {viewMode === 'list' ? (
+          <Table
+            columns={columns}
+            dataSource={appointments}
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: false,
+              position: ['bottomCenter'],
+              itemRender: (page, type, originalElement) => {
+                if (type === 'prev') {
+                  return <Button>Previous</Button>;
+                }
+                if (type === 'next') {
+                  return <Button>Next</Button>;
+                }
+                return originalElement;
+              },
+            }}
+          />
+        ) : (
+          <AppointmentsCalendarPage />
+        )}
       </div>
     </div>
   );

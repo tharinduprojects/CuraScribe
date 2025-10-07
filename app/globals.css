@@ -29,3 +29,7 @@ body {
 .ant-card {
   margin-bottom: 30px !important;
 }
+
+.custom-calendar thead {
+  background: #f7f6f8;
+}

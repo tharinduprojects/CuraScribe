@@ -39,8 +39,8 @@ function MedicalRecordsContent() {
       const filtered = allRecords.filter(
         (record) =>
           record.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          record.chief_complaint.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          record.doctor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          record.chief_complaint?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          record.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           `#MR${String(record.id).padStart(3, '0')}`.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setRecords(filtered);
