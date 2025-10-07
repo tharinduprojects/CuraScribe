@@ -1,290 +1,324 @@
 'use client';
 
-import { Form, Input, Select, Button, Row, Col, Table, DatePicker } from 'antd';
-import { ArrowLeft, Search, Trash2, Calendar } from 'lucide-react';
-import { MedicineBoxOutlined, ExperimentOutlined, SyncOutlined, EditOutlined, UserOutlined } from '@ant-design/icons';
-import Link from 'next/link';
-import { useState } from 'react';
-import type { ColumnsType } from 'antd/es/table';
+import { useState, useEffect, useRef } from 'react';
+import { Form, Input, Select, Button, App, Spin, notification } from 'antd';
+import { ArrowLeftOutlined, AudioOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import api from '@/app/lib/axios';
 
-interface MedicationRow {
-  key: string;
-  medicationName: string;
-  dosage: string;
-  frequency: string;
-  instructions: string;
+const { TextArea } = Input;
+
+interface Patient {
+  id: number;
+  first_name: string;
+  last_name: string;
 }
 
-interface HistoryData {
-  key: string;
-  dateTime: string;
-  medicationName: string;
-  dosage: string;
-  frequency: string;
-  instructions: string;
-}
-
-export default function AddPrescriptionsPage() {
+function AddPrescriptionContent() {
+  const { message } = App.useApp();
+  const router = useRouter();
   const [form] = Form.useForm();
-  const [medications, setMedications] = useState<MedicationRow[]>([
-    { key: '1', medicationName: '', dosage: '', frequency: '', instructions: '' },
-    { key: '2', medicationName: '', dosage: '', frequency: '', instructions: '' },
-  ]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const [notify, contextHolder] = notification.useNotification();
 
-  const addMedication = () => {
-    const newMedication: MedicationRow = {
-      key: Date.now().toString(),
-      medicationName: '',
-      dosage: '',
-      frequency: '',
-      instructions: '',
+
+  useEffect(() => {
+    fetchPatients();
+
+    // Initialize Speech Recognition
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
     };
-    setMedications([...medications, newMedication]);
+  }, []);
+
+  const fetchPatients = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/patients');
+      if (response.data.success && Array.isArray(response.data.patients)) {
+        setPatients(response.data.patients);
+      }
+    } catch (error) {
+      message.error('Failed to fetch patients');
+      console.error('Error fetching patients:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeMedication = (key: string) => {
-    setMedications(medications.filter(med => med.key !== key));
+  const onFinish = async (values: any) => {
+    setSubmitting(true);
+
+    const payload = {
+      patient_id: Number(values.patient_id),
+      doctor_name: values.doctor_name,
+      medication_name: values.medication_name,
+      dosage: values.dosage,
+      frequency: values.frequency,
+      instructions: values.instructions || '',
+    };
+
+    try {
+      const response = await api.post('/prescriptions', payload);
+
+      if (response.data.success) {
+        notify.success({
+          message: 'Prescription Saved',
+          description: 'Prescription saved successfully',
+          duration: 3,
+        });
+        form.resetFields();
+      } else {
+        notify.error({
+          message: 'Prescription Failed',
+          description: 'Something went wrong adding prescription',
+          duration: 3,
+        });
+        console.error(response.data.message || 'Failed to save prescription');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.error ||
+        'An error occurred while saving the prescription';
+      console.error('Error:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const onFinish = (values: any) => {
-    console.log('Form values:', values);
+  const handleClear = () => {
+    form.resetFields();
   };
 
-  const historyColumns: ColumnsType<HistoryData> = [
-    {
-      title: 'Date & Time',
-      dataIndex: 'dateTime',
-      key: 'dateTime',
-      width: 150,
-    },
-    {
-      title: 'Medication Name',
-      dataIndex: 'medicationName',
-      key: 'medicationName',
-      width: 150,
-    },
-    {
-      title: 'Dosage',
-      dataIndex: 'dosage',
-      key: 'dosage',
-      width: 120,
-    },
-    {
-      title: 'Frequency',
-      dataIndex: 'frequency',
-      key: 'frequency',
-      width: 150,
-    },
-    {
-      title: 'Instructions',
-      dataIndex: 'instructions',
-      key: 'instructions',
-    },
-  ];
+  const startListening = (fieldName: string) => {
+    if (!recognitionRef.current) {
+      message.error('Speech recognition is not supported in your browser');
+      return;
+    }
 
-  const historyData: HistoryData[] = [
-    {
-      key: '1',
-      dateTime: 'Today, 10:30am',
-      medicationName: 'Actos',
-      dosage: '500mg',
-      frequency: 'Twice daily',
-      instructions: 'Outline any follow-up actions or monitoring that may be neces...',
-    },
-    {
-      key: '2',
-      dateTime: 'Today, 11:00am',
-      medicationName: 'Adderall',
-      dosage: '1000mg',
-      frequency: 'Once every morning',
-      instructions: 'Mention any allergies or contraindications that should be noted.',
-    },
-    {
-      key: '3',
-      dateTime: 'Today, 11:30am',
-      medicationName: 'Ritalin',
-      dosage: '250mg',
-      frequency: 'Three times a week',
-      instructions: 'Add any special instructions or considerations for the patient\'s...',
-    },
-    {
-      key: '4',
-      dateTime: 'Today, 12:00pm',
-      medicationName: 'Vyvanse',
-      dosage: '750mg',
-      frequency: 'Every Friday',
-      instructions: 'Include any relevant information that may assist in the prescri...',
-    },
-    {
-      key: '5',
-      dateTime: 'Today, 12:30pm',
-      medicationName: 'Concerta',
-      dosage: '1250mg',
-      frequency: 'As needed',
-      instructions: 'Please provide any specific details or guidelines that should b...',
-    },
-  ];
+    if (isListening === fieldName) {
+      recognitionRef.current.stop();
+      setIsListening(null);
+      return;
+    }
+
+    setIsListening(fieldName);
+
+    recognitionRef.current.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      const currentValue = form.getFieldValue(fieldName) || '';
+      const newValue = currentValue ? `${currentValue} ${transcript}` : transcript;
+      form.setFieldsValue({ [fieldName]: newValue });
+    };
+
+    recognitionRef.current.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      message.error(`Speech recognition error: ${event.error}`);
+      setIsListening(null);
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsListening(null);
+    };
+
+    recognitionRef.current.start();
+  };
 
   return (
     <div>
+      {contextHolder}
       {/* Header */}
       <div className="mb-6">
-        <Link href="/prescriptions" className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-3">
-          <ArrowLeft className="w-4 h-4" />
+        <button
+          onClick={() => router.push('/prescriptions')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-3"
+        >
+          <ArrowLeftOutlined />
           <span className="text-sm">Back to Prescriptions</span>
-        </Link>
-
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Add New Prescriptions</h1>
-          <div className="flex gap-3">
-            <Button>Cancel</Button>
-            <Button
-              type="primary"
-              className="bg-purple-600"
-              onClick={() => form.submit()}
-            >
-              Save Prescriptions
-            </Button>
-          </div>
-        </div>
+        </button>
+        <h1 className="text-2xl font-bold text-gray-800">New Prescription</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+      {/* Form */}
+      <div className="bg-white">
         <Form
           form={form}
           layout="vertical"
           onFinish={onFinish}
           autoComplete="off"
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Patient"
-                name="patient"
-                rules={[{ required: true, message: 'Please select a patient' }]}
-              >
-                <Select
-                  placeholder="Select patient"
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={[
-                    { value: '1', label: 'Sarah Johnson' },
-                    { value: '2', label: 'Michael Chen' },
-                    { value: '3', label: 'Emma Davis' },
-                    { value: '4', label: 'Liam Johnson' },
-                    { value: '5', label: 'Sophia Brown' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                label="Doctor Name"
-                name="doctorName"
-                rules={[{ required: true, message: 'Please enter doctor name' }]}
-              >
-                <Input placeholder="Doctor name" prefix={<span className="text-gray-400"><UserOutlined /></span>} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          {/* Medication Section */}
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Medication</h2>
-
-            <div className="space-y-4">
-              {medications.map((med) => (
-                <Row gutter={16} key={med.key} align="middle">
-                  <Col span={5}>
-                    <Input
-                      placeholder="Enter medication name"
-                      prefix={<MedicineBoxOutlined className="text-gray-400" />}
-                    />
-                  </Col>
-                  <Col span={4}>
-                    <Input
-                      placeholder="e.g. 500mg"
-                      prefix={<ExperimentOutlined className="text-gray-400" />}
-                    />
-                  </Col>
-                  <Col span={5}>
-                    <Input
-                      placeholder="E.g. Twice d..."
-                      prefix={<SyncOutlined className="text-gray-400" />}
-                    />
-                  </Col>
-                  <Col span={9}>
-                    <Input
-                      placeholder="Additional notes or instructions"
-                      prefix={<EditOutlined className="text-gray-400" />}
-                    />
-                  </Col>
-                  <Col span={1}>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<Trash2 className="w-4 h-4" />}
-                      onClick={() => removeMedication(med.key)}
-                      disabled={medications.length === 1}
-                    />
-                  </Col>
-                </Row>
-              ))}
-            </div>
-
-            <Button
-              type="dashed"
-              onClick={addMedication}
-              className="mt-4"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Patient */}
+            <Form.Item
+              label="Patient"
+              name="patient_id"
+              rules={[{ required: true, message: 'Please select a patient' }]}
             >
-              Add Medication
+              <Select
+                placeholder="Select Patient"
+                showSearch
+                size='large'
+                loading={loading}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={patients.map((patient) => ({
+                  value: patient.id,
+                  label: `${patient.first_name} ${patient.last_name}`,
+                }))}
+                notFoundContent={loading ? <Spin size="small" /> : 'No patients found'}
+              />
+            </Form.Item>
+
+            {/* Doctor Name */}
+            <Form.Item
+              label="Doctor Name"
+              name="doctor_name"
+              rules={[{ required: true, message: 'Please enter doctor name' }]}
+            >
+              <Input
+                placeholder="e.g., Dr. John Doe"
+                suffix={
+                  <Button
+                    shape="circle"
+                    size='small'
+                    icon={<AudioOutlined style={{ color: isListening === 'doctor_name' ? '#ffffff' : undefined }} />}
+                    onClick={() => startListening('doctor_name')}
+                    className={`${isListening === 'doctor_name' ? '!bg-red-500 animate-pulse' : ''}`}
+                  />
+                }
+              />
+            </Form.Item>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Medication Name */}
+            <Form.Item
+              label="Medication Name"
+              name="medication_name"
+              rules={[{ required: true, message: 'Please enter medication name' }]}
+            >
+              <Input
+                placeholder="e.g., Amoxicillin"
+                suffix={
+                  <Button
+                    shape="circle"
+                    size='small'
+                    icon={<AudioOutlined style={{ color: isListening === 'medication_name' ? '#ffffff' : undefined }} />}
+                    onClick={() => startListening('medication_name')}
+                    className={`${isListening === 'medication_name' ? '!bg-red-500 animate-pulse' : ''}`}
+                  />
+                }
+              />
+            </Form.Item>
+
+            {/* Dosage */}
+            <Form.Item
+              label="Dosage"
+              name="dosage"
+              rules={[{ required: true, message: 'Please enter dosage' }]}
+            >
+              <Input
+                placeholder="e.g., 500mg"
+                suffix={
+                  <Button
+                    shape="circle"
+                    size='small'
+                    icon={<AudioOutlined style={{ color: isListening === 'dosage' ? '#ffffff' : undefined }} />}
+                    onClick={() => startListening('dosage')}
+                    className={`${isListening === 'dosage' ? '!bg-red-500 animate-pulse' : ''}`}
+                  />
+                }
+              />
+            </Form.Item>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Frequency */}
+            <Form.Item
+              label="Frequency"
+              name="frequency"
+              rules={[{ required: true, message: 'Please enter frequency' }]}
+            >
+              <Input
+                placeholder="e.g., Twice daily"
+                suffix={
+                  <Button
+                    shape="circle"
+                    size='small'
+                    icon={<AudioOutlined style={{ color: isListening === 'frequency' ? '#ffffff' : undefined }} />}
+                    onClick={() => startListening('frequency')}
+                    className={`${isListening === 'frequency' ? '!bg-red-500 animate-pulse' : ''}`}
+                  />
+                }
+              />
+            </Form.Item>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Instructions */}
+            <Form.Item
+              label="Instructions"
+              name="instructions"
+              rules={[{ required: true, message: 'Please enter instructions' }]}
+            >
+              <div className="relative">
+                <TextArea
+                  rows={4}
+                  placeholder="Additional instructions (e.g., Take with food, avoid alcohol...)"
+                />
+                <Button
+                  shape="circle"
+                  size='small'
+                  icon={<AudioOutlined style={{ color: isListening === 'instructions' ? '#ffffff' : undefined }} />}
+                  onClick={() => startListening('instructions')}
+                  className={`absolute top-2 right-2 z-10 ${isListening === 'instructions' ? '!bg-red-500 animate-pulse' : ''}`}
+                />
+              </div>
+            </Form.Item>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3 mt-6">
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              loading={submitting}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Save Prescription
+            </Button>
+            <Button size="large" onClick={handleClear}>
+              Clear
             </Button>
           </div>
         </Form>
       </div>
-
-      {/* Patient Medication History */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Patient Medication History</h2>
-          <Button type="primary" className="bg-purple-600">
-            View All
-          </Button>
-        </div>
-
-        <div className="flex items-center justify-between mb-4">
-          <Input
-            placeholder="Search"
-            prefix={<Search className="w-4 h-4 text-gray-400" />}
-            className="w-64"
-          />
-          <Button icon={<Calendar className="w-4 h-4" />}>
-            Date Range
-          </Button>
-        </div>
-
-        <Table
-          columns={historyColumns}
-          dataSource={historyData}
-          pagination={{
-            pageSize: 5,
-            showSizeChanger: false,
-            position: ['bottomCenter'],
-            itemRender: (page, type, originalElement) => {
-              if (type === 'prev') {
-                return <Button>Previous</Button>;
-              }
-              if (type === 'next') {
-                return <Button>Next</Button>;
-              }
-              return originalElement;
-            },
-          }}
-        />
-      </div>
     </div>
+  );
+}
+
+export default function AddPrescriptionPage() {
+  return (
+    <App>
+      <AddPrescriptionContent />
+    </App>
   );
 }
