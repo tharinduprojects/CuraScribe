@@ -84,7 +84,7 @@ export default function PatientManagementPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 whitespace-nowrap">
+        <h1 className="text-2xl font-medium text-gray-800 whitespace-nowrap">
           Patient Management
         </h1>
         <div className="flex gap-3">

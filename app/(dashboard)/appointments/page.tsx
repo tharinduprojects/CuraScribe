@@ -163,7 +163,7 @@ export default function AppointmentsPage() {
       {/* Appointments Header */}
       <div className="bg-white rounded-lg">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Appointments</h2>
+          <h2 className="text-xl font-medium text-gray-800">Appointments</h2>
           <div className="flex gap-2">
             <Button
               icon={<CalendarOutlined />}

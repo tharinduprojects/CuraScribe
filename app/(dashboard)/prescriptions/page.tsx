@@ -166,18 +166,9 @@ export default function PrescriptionsPage() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Prescriptions</h1>
+        <h1 className="text-2xl font-medium text-gray-800">Prescriptions</h1>
         <Space>
-          <Input
-            placeholder="Search by name, ID, or contact"
-            prefix={<SearchOutlined className="text-gray-400" />}
-            className="w-64"
-            onChange={(e) => setSearchText(e.target.value)}
-          />
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={handleExport}
-          >
+          <Button className="border-gray-300" onClick={handleExport}>
             Export
           </Button>
           <Button
@@ -189,6 +180,7 @@ export default function PrescriptionsPage() {
           </Button>
         </Space>
       </div>
+
 
       {/* Search */}
       <div className="mb-4">
