@@ -1,8 +1,12 @@
 'use client';
 
-import { Table, Avatar, Tag, Button } from 'antd';
+import { useEffect, useState } from 'react';
+import { Table, Avatar, Tag, Button, message, Spin } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import api from '@/app/lib/axios';
+import dayjs from 'dayjs';
+import Link from 'next/link';
 
 interface AppointmentData {
   key: string;
@@ -16,10 +20,13 @@ interface AppointmentData {
     name: string;
     avatar?: string;
   };
-  status: 'Completed' | 'In Progress' | 'Urgent';
+  status: string;
 }
 
 export default function RecentAppointments() {
+  const [appointments, setAppointments] = useState<AppointmentData[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const columns: ColumnsType<AppointmentData> = [
     {
       title: 'Patient',
@@ -58,75 +65,78 @@ export default function RecentAppointments() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        let color = 'default';
-        if (status === 'Completed') color = 'success';
-        if (status === 'In Progress') color = 'warning';
-        if (status === 'Urgent') color = 'error';
+        let color: 'default' | 'success' | 'warning' | 'error' = 'default';
+        const lower = status.toLowerCase();
+
+        if (['completed', 'confirmed'].includes(lower)) color = 'success';
+        else if (['pending', 'in progress', 'scheduled'].includes(lower)) color = 'warning';
+        else if (lower === 'urgent') color = 'error';
 
         return <Tag color={color}>{status}</Tag>;
       },
     },
   ];
 
-  const data: AppointmentData[] = [
-    {
-      key: '1',
-      patient: { name: 'Sarah Johnson' },
-      dateTime: 'Today, 10:30am',
-      type: 'General Checkup',
-      doctor: { name: 'Michael Smith' },
-      status: 'Completed',
-    },
-    {
-      key: '2',
-      patient: { name: 'Michael Chen' },
-      dateTime: 'Today, 11:00am',
-      type: 'Follow-up',
-      doctor: { name: 'Emily Davis' },
-      status: 'In Progress',
-    },
-    {
-      key: '3',
-      patient: { name: 'Emma Davis' },
-      dateTime: 'Today, 11:30am',
-      type: 'Emergency',
-      doctor: { name: 'James Brown' },
-      status: 'Urgent',
-    },
-    {
-      key: '4',
-      patient: { name: 'Liam Johnson' },
-      dateTime: 'Today, 12:00pm',
-      type: 'General Checkup',
-      doctor: { name: 'Olivia Wilson' },
-      status: 'Completed',
-    },
-    {
-      key: '5',
-      patient: { name: 'Sophia Brown' },
-      dateTime: 'Today, 12:30pm',
-      type: 'General Checkup',
-      doctor: { name: 'William Taylor' },
-      status: 'In Progress',
-    },
-  ];
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await api.get('/appointments');
+        const result = response.data;
+
+        if (result.success && Array.isArray(result.appointments)) {
+          // Sort by latest date & time
+          const sorted = result.appointments.sort((a, b) => {
+            const dateA = dayjs(`${a.appointment_date} ${a.appointment_time}`);
+            const dateB = dayjs(`${b.appointment_date} ${b.appointment_time}`);
+            return dateB.valueOf() - dateA.valueOf();
+          });
+
+          // Take only the latest 3
+          const latestThree = sorted.slice(0, 3).map((item) => ({
+            key: item.id.toString(),
+            patient: { name: `${item.first_name} ${item.last_name}`.trim() },
+            dateTime: `${dayjs(item.appointment_date).format('MMM D, YYYY')} ${item.appointment_time.slice(0, 5)}`,
+            type: item.appointment_type,
+            doctor: { name: item.doctor_name },
+            status: item.status,
+          }));
+
+          setAppointments(latestThree);
+        } else {
+          message.warning('No appointments found.');
+        }
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+        message.error('Failed to load appointments.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
 
   return (
-    <div className="bg-white rounded-lg py-6">
+    <div className="bg-white rounded-lg py-6 px-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Recent Appointments</h2>
-        <Button type="primary">View All</Button>
+        <Link href="/appointments">
+          <Button type="primary">View All</Button>
+        </Link>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={{
-          pageSize: 5,
-          showSizeChanger: false,
-          position: ['bottomCenter'],
-        }}
-      />
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <Spin />
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={appointments}
+          pagination={false}
+          rowKey="key"
+        />
+      )}
     </div>
   );
 }
