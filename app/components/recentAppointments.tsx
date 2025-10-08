@@ -85,14 +85,14 @@ export default function RecentAppointments() {
 
         if (result.success && Array.isArray(result.appointments)) {
           // Sort by latest date & time
-          const sorted = result.appointments.sort((a, b) => {
+          const sorted = result.appointments.sort((a: { appointment_date: any; appointment_time: any; }, b: { appointment_date: any; appointment_time: any; }) => {
             const dateA = dayjs(`${a.appointment_date} ${a.appointment_time}`);
             const dateB = dayjs(`${b.appointment_date} ${b.appointment_time}`);
             return dateB.valueOf() - dateA.valueOf();
           });
 
           // Take only the latest 3
-          const latestThree = sorted.slice(0, 3).map((item) => ({
+          const latestThree = sorted.slice(0, 3).map((item: { id: { toString: () => any; }; first_name: any; last_name: any; appointment_date: string | number | dayjs.Dayjs | Date | null | undefined; appointment_time: string | any[]; appointment_type: any; doctor_name: any; status: any; }) => ({
             key: item.id.toString(),
             patient: { name: `${item.first_name} ${item.last_name}`.trim() },
             dateTime: `${dayjs(item.appointment_date).format('MMM D, YYYY')} ${item.appointment_time.slice(0, 5)}`,
