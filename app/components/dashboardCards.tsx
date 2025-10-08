@@ -104,7 +104,7 @@ export default function DashboardCards() {
           </h3>
 
           <div className="flex items-end justify-between">
-            <p className="text-4xl text-gray-800">{card.value}</p>
+            <div className="text-4xl text-gray-800">{card.value}</div>
 
             <div
               className={`flex items-center ${card.trend === 'up' ? 'text-green-600' : 'text-red-500'
