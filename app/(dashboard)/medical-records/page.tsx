@@ -6,7 +6,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
 import api from '@/app/lib/axios';
-
+import dayjs from 'dayjs';
 
 interface MedicalRecord {
   key: string;
@@ -92,18 +92,11 @@ function MedicalRecordsContent() {
       width: 150,
     },
     {
-      title: 'DATE',
+      title: 'DATE sss',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 150,
-      render: (date: string) => {
-        const dateObj = new Date(date);
-        return dateObj.toLocaleDateString('en-US', {
-          month: 'short',
-          day: '2-digit',
-          year: 'numeric',
-        });
-      },
+      render: (date: string) => dayjs(date).format('MM-DD-YYYY'),
     },
     {
       title: 'DIAGNOSIS',
@@ -170,12 +163,8 @@ function MedicalRecordsContent() {
               showTotal: (total, range) =>
                 `Page ${range[0]} of ${Math.ceil(total / 10)}`,
               itemRender: (page, type, originalElement) => {
-                if (type === 'prev') {
-                  return <Button>Previous</Button>;
-                }
-                if (type === 'next') {
-                  return <Button>Next</Button>;
-                }
+                if (type === 'prev') return <Button>Previous</Button>;
+                if (type === 'next') return <Button>Next</Button>;
                 return originalElement;
               },
             }}

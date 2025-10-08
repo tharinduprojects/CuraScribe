@@ -23,7 +23,7 @@ export default function AppointmentsPage() {
   const router = useRouter();
   const [appointments, setAppointments] = useState<AppointmentData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list'); // 👈 tab-like state
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const statsCards = [
     {
@@ -32,7 +32,7 @@ export default function AppointmentsPage() {
       value: "12",
       percentage: "100%",
       bgColor: "bg-purple-100",
-      iconBg: "bg-purple-600"
+      iconBg: "bg-purple-600",
     },
     {
       icon: <Grid3x3 className="w-8 h-8 text-white" />,
@@ -40,7 +40,7 @@ export default function AppointmentsPage() {
       value: "27",
       percentage: "100%",
       bgColor: "bg-teal-100",
-      iconBg: "bg-teal-500"
+      iconBg: "bg-teal-500",
     },
     {
       icon: <CalendarDays className="w-8 h-8 text-white" />,
@@ -48,8 +48,8 @@ export default function AppointmentsPage() {
       value: "275",
       percentage: "46%",
       bgColor: "bg-blue-100",
-      iconBg: "bg-blue-500"
-    }
+      iconBg: "bg-blue-500",
+    },
   ];
 
   const columns: ColumnsType<AppointmentData> = [
@@ -57,7 +57,7 @@ export default function AppointmentsPage() {
       title: 'Date & Time',
       dataIndex: 'time',
       key: 'time',
-      width: 180,
+      width: 280,
     },
     {
       title: 'Patient',
@@ -87,27 +87,32 @@ export default function AppointmentsPage() {
         if (status.toLowerCase() === 'confirmed') color = 'green';
         if (status.toLowerCase() === 'cancelled') color = 'red';
 
-        return <Tag color={color}>{status.charAt(0).toUpperCase() + status.slice(1)}</Tag>;
+        return (
+          <Tag color={color}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </Tag>
+        );
       },
     },
     {
       title: 'Action',
       key: 'action',
       width: 80,
-      render: () => (
-        <Button type="text" icon={<span>⋮</span>} />
-      ),
+      render: () => <Button type="text" icon={<span>⋮</span>} />,
     },
   ];
 
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/appointments'); // calls http://18.188.189.85:8000/api/appointments
+      const { data } = await api.get('/appointments');
       if (data?.success) {
         const formatted = data.appointments.map((item: any) => ({
           key: String(item.id),
-          time: `${dayjs(item.appointment_date).format('MMM DD, YYYY')} ${dayjs(item.appointment_time, 'HH:mm:ss').format('hh:mm A')}`,
+          time: `${dayjs(item.appointment_date).format('MM-DD-YYYY')} ${dayjs(
+            item.appointment_time,
+            'HH:mm:ss'
+          ).format('hh:mm A')}`,
           patient: `${item.first_name} ${item.last_name}`.trim(),
           type: item.appointment_type,
           duration: '30 min',
@@ -134,11 +139,10 @@ export default function AppointmentsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {statsCards.map((card, index) => (
-          <div
-            key={index}
-            className={`${card.bgColor} rounded-3xl p-6`}
-          >
-            <div className={`${card.iconBg} w-16 h-16 rounded-full flex items-center justify-center mb-4`}>
+          <div key={index} className={`${card.bgColor} rounded-3xl p-6`}>
+            <div
+              className={`${card.iconBg} w-16 h-16 rounded-full flex items-center justify-center mb-4`}
+            >
               {card.icon}
             </div>
 
@@ -147,9 +151,7 @@ export default function AppointmentsPage() {
             </h3>
 
             <div className="flex items-end justify-between">
-              <p className="text-4xl font-bold text-gray-800">
-                {card.value}
-              </p>
+              <p className="text-4xl font-bold text-gray-800">{card.value}</p>
 
               <div className="flex items-center text-green-600">
                 <TrendingUp className="w-5 h-5 mr-1" />
