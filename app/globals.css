@@ -12,3 +12,7 @@
 .custom-calendar thead {
   background: #f7f6f8;
 }
+
+.custom-calendar .ant-picker-cell-selected ul.space-y-1 {
+  color: #7b39c9 !important;
+}

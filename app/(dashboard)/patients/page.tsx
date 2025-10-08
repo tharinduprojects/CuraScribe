@@ -6,6 +6,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import dayjs from 'dayjs';
 
 interface PatientData {
   key: string;
@@ -38,15 +39,11 @@ export default function PatientManagementPage() {
               : 'N/A',
             contact: p.phone || p.email || 'N/A',
             lastVisit: p.updated_at
-              ? new Date(p.updated_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })
+              ? dayjs(p.updated_at).format('MM-DD-YYYY')
               : 'N/A',
           }));
           setAllPatients(mappedData);
-          setPatients(mappedData); // full list initially
+          setPatients(mappedData);
         }
       } catch (error) {
         console.error('Error fetching patients:', error);
@@ -58,7 +55,7 @@ export default function PatientManagementPage() {
     fetchPatients();
   }, []);
 
-  // Debounced search effect
+  // Debounced search
   useEffect(() => {
     const handler = setTimeout(() => {
       const filtered = allPatients.filter(

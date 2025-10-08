@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, message, Space } from 'antd';
-import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import api from '@/app/lib/axios';
 import { SortOrder } from 'antd/es/table/interface';
+import dayjs from 'dayjs';
 
 interface Prescription {
   id: number;
@@ -15,9 +16,8 @@ interface Prescription {
   dosage: string;
   frequency: string;
   doctor_name: string;
-  created_at: Date;
+  created_at: string;
 }
-
 
 const { Search } = Input;
 
@@ -57,22 +57,18 @@ export default function PrescriptionsPage() {
   };
 
   const handleExport = () => {
-    // Convert prescriptions to CSV
     const headers = ['ID', 'Patient', 'Medication', 'Dosage', 'Frequency', 'Doctor', 'Date'];
-    const csvData = prescriptions.map(p => [
+    const csvData = prescriptions.map((p) => [
       p.id,
       `${p.first_name} ${p.last_name}`,
       p.medication_name,
       p.dosage,
       p.frequency,
       p.doctor_name,
-      new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' })
+      dayjs(p.created_at).format('MMM DD, YYYY'),
     ]);
 
-    const csv = [
-      headers.join(','),
-      ...csvData.map(row => row.join(','))
-    ].join('\n');
+    const csv = [headers.join(','), ...csvData.map((row) => row.join(','))].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -81,7 +77,7 @@ export default function PrescriptionsPage() {
     a.download = 'prescriptions.csv';
     a.click();
     window.URL.revokeObjectURL(url);
-    message.success('Prescriptions exported successfully');
+    // message.success('Prescriptions exported successfully');
   };
 
   const columns = [
@@ -90,15 +86,15 @@ export default function PrescriptionsPage() {
       dataIndex: 'id',
       key: 'id',
       width: 80,
-      render: (id: any) => `#${String(id).padStart(3, '0')}`,
-      sorter: (a: { id: number; }, b: { id: number; }) => a.id - b.id,
+      render: (id: number) => `#${String(id).padStart(3, '0')}`,
+      sorter: (a: Prescription, b: Prescription) => a.id - b.id,
     },
     {
       title: 'Patient',
       key: 'patient',
       width: 180,
-      render: (_: any, record: { first_name: any; last_name: any; }) => `${record.first_name} ${record.last_name}`,
-      sorter: (a: { first_name: any; last_name: any; }, b: { first_name: any; last_name: any; }) => {
+      render: (_: any, record: Prescription) => `${record.first_name} ${record.last_name}`,
+      sorter: (a: Prescription, b: Prescription) => {
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
@@ -109,7 +105,8 @@ export default function PrescriptionsPage() {
       dataIndex: 'medication_name',
       key: 'medication_name',
       width: 180,
-      sorter: (a: { medication_name: any; }, b: { medication_name: any; }) => (a.medication_name || '').localeCompare(b.medication_name || ''),
+      sorter: (a: Prescription, b: Prescription) =>
+        (a.medication_name || '').localeCompare(b.medication_name || ''),
     },
     {
       title: 'Dosage',
@@ -128,25 +125,22 @@ export default function PrescriptionsPage() {
       dataIndex: 'doctor_name',
       key: 'doctor_name',
       width: 180,
-      sorter: (a: { doctor_name: any; }, b: { doctor_name: any; }) => (a.doctor_name || '').localeCompare(b.doctor_name || ''),
+      sorter: (a: Prescription, b: Prescription) =>
+        (a.doctor_name || '').localeCompare(b.doctor_name || ''),
     },
     {
       title: 'Date',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 150,
-      render: (date: string | number | Date) => new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-      }),
-      sorter: (a: { created_at: string | number | Date; }, b: { created_at: string | number | Date; }) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      defaultSortOrder: 'descend' as SortOrder, // Update the type here
+      render: (date: string) => dayjs(date).format('MM-DD-YYYY'),
+      sorter: (a: Prescription, b: Prescription) =>
+        dayjs(a.created_at).unix() - dayjs(b.created_at).unix(),
+      defaultSortOrder: 'descend' as SortOrder,
     },
   ];
 
-  // Filter prescriptions based on search
-  const filteredPrescriptions = prescriptions.filter(prescription => {
+  const filteredPrescriptions = prescriptions.filter((prescription) => {
     const searchLower = searchText.toLowerCase();
     const patientName = `${prescription.first_name} ${prescription.last_name}`.toLowerCase();
     const medication = (prescription.medication_name || '').toLowerCase();
@@ -181,14 +175,8 @@ export default function PrescriptionsPage() {
         </Space>
       </div>
 
-
-      {/* Search */}
-      <div className="mb-4">
-
-      </div>
-
       {/* Table */}
-      <div className="bg-white rounded-lg ">
+      <div className="bg-white rounded-lg">
         <Table
           columns={columns}
           dataSource={filteredPrescriptions}
