@@ -40,7 +40,7 @@ function AppointmentsCalendarContent() {
         setAppointments(response.data.appointments);
       }
     } catch (error) {
-      message.error('Failed to fetch appointments');
+      // message.error('Failed to fetch appointments');
       console.error('Error fetching appointments:', error);
     } finally {
       setLoading(false);
@@ -146,39 +146,68 @@ function AppointmentsCalendarContent() {
         title={`Appointments on ${selectedDate.format('MMMM D, YYYY')}`}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
+        width={700}
       >
         {getAppointmentsForDate(selectedDate).length === 0 ? (
           <Empty description="No appointments for this date" />
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {getAppointmentsForDate(selectedDate).map((apt) => (
               <div
                 key={apt.id}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => {
-                  // setIsModalVisible(false);
-                  // router.push(`/appointments/${apt.id}`);
-                }}
+                className="p-4 border border-gray-200 rounded-xl  transition-all bg-white"
               >
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-900 mb-1">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold text-lg text-gray-900">
                     {apt.first_name} {apt.last_name}
-                  </span>
-                  <span className="text-sm text-gray-600">Dr. {apt.doctor_name}</span>
-                </div>
-                <div className="text-right">
-                  <Tag color={getStatusColor(apt.status)} className='!mr-0'>
+                  </h3>
+                  <div className='border-b border-gray-200'></div>
+                  <Tag color={getStatusColor(apt.status)} className="!text-sm !px-3">
                     {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
                   </Tag>
-                  <div className="text-sm font-medium text-gray-900">
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                  <div>
+                    <span className="font-semibold">Doctor:</span> {apt.doctor_name}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Type:</span> {apt.appointment_type}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Date:</span>{' '}
+                    {dayjs(apt.appointment_date).format('MMMM D, YYYY')}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Time:</span>{' '}
                     {dayjs(apt.appointment_time, 'HH:mm:ss').format('h:mm A')}
                   </div>
+                  <div>
+                    <span className="font-semibold">Patient ID:</span> {apt.patient_id}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Appointment ID:</span> {apt.id}
+                  </div>
                 </div>
+
+                {/* <div className="flex justify-end mt-4">
+                  <Button
+                    type="link"
+                    onClick={() => {
+                      // setIsModalVisible(false);
+                      // router.push(`/appointments/${apt.id}`);
+                    }}
+                    className="!p-0 text-blue-600 hover:text-blue-700"
+                  >
+                    View Details
+                  </Button>
+                </div> */}
               </div>
             ))}
           </div>
         )}
       </Modal>
+
     </div>
   );
 }

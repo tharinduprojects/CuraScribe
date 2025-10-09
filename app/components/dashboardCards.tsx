@@ -69,24 +69,24 @@ export default function DashboardCards() {
       bgColor: 'bg-teal-100',
       iconBg: 'bg-teal-500',
     },
-    {
-      icon: <Hourglass className="w-8 h-8 text-white" />,
-      title: 'Pending Lab Results',
-      value: '18',
-      percentage: '46%',
-      trend: 'up',
-      bgColor: 'bg-blue-100',
-      iconBg: 'bg-blue-500',
-    },
-    {
-      icon: <AlertCircle className="w-8 h-8 text-white" />,
-      title: 'Critical Patients',
-      value: '6',
-      percentage: '4%',
-      trend: 'down',
-      bgColor: 'bg-red-100',
-      iconBg: 'bg-red-500',
-    },
+    // {
+    //   icon: <Hourglass className="w-8 h-8 text-white" />,
+    //   title: 'Pending Lab Results',
+    //   value: '18',
+    //   percentage: '46%',
+    //   trend: 'up',
+    //   bgColor: 'bg-blue-100',
+    //   iconBg: 'bg-blue-500',
+    // },
+    // {
+    //   icon: <AlertCircle className="w-8 h-8 text-white" />,
+    //   title: 'Critical Patients',
+    //   value: '6',
+    //   percentage: '4%',
+    //   trend: 'down',
+    //   bgColor: 'bg-red-100',
+    //   iconBg: 'bg-red-500',
+    // },
   ];
 
   return (
