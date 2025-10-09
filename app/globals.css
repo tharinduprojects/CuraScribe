@@ -13,6 +13,11 @@
   background: #f7f6f8;
 }
 
-.custom-calendar .ant-picker-cell-selected ul.space-y-1 {
+.custom-calendar .ant-picker-cell-selected ul {
   color: #7b39c9 !important;
+}
+
+.custom-calendar .ant-picker-calendar-date-today {
+  background: #ffe6dc !important;
+  border-color: #f29760 !important;
 }

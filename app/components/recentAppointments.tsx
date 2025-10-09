@@ -95,7 +95,7 @@ export default function RecentAppointments() {
           const latestThree = sorted.slice(0, 3).map((item: { id: { toString: () => any; }; first_name: any; last_name: any; appointment_date: string | number | dayjs.Dayjs | Date | null | undefined; appointment_time: string | any[]; appointment_type: any; doctor_name: any; status: any; }) => ({
             key: item.id.toString(),
             patient: { name: `${item.first_name} ${item.last_name}`.trim() },
-            dateTime: `${dayjs(item.appointment_date).format('MMM D, YYYY')} ${item.appointment_time.slice(0, 5)}`,
+            dateTime: `${dayjs(item.appointment_date).format('MM-DD-YYYY')} - ${item.appointment_time.slice(0, 5)}`,
             type: item.appointment_type,
             doctor: { name: item.doctor_name },
             status: item.status,

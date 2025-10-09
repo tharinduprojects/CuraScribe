@@ -92,7 +92,7 @@ function MedicalRecordsContent() {
       width: 150,
     },
     {
-      title: 'DATE sss',
+      title: 'DATE',
       dataIndex: 'created_at',
       key: 'created_at',
       width: 150,
