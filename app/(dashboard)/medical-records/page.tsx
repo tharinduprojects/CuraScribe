@@ -140,9 +140,9 @@ function MedicalRecordsContent() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <Button>Export</Button>
-          <Button type="primary" className="bg-indigo-600 hover:bg-indigo-700">
+          {/* <Button type="primary" className="bg-indigo-600 hover:bg-indigo-700">
             Add Record
-          </Button>
+          </Button> */}
         </div>
       </div>
 

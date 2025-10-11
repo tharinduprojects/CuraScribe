@@ -1,6 +1,6 @@
 'use client';
 
-import { Table, Button, Tag, Drawer, Descriptions } from 'antd';
+import { Table, Button, Tag, Drawer, Descriptions, DatePicker } from 'antd';
 import { Calendar, Grid3x3, CalendarDays, X } from 'lucide-react';
 import type { ColumnsType } from 'antd/es/table';
 import { AppstoreOutlined, CalendarOutlined } from '@ant-design/icons';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import api from '@/app/lib/axios';
 import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import AppointmentsCalendarPage from './appointmentCalendar';
 
@@ -32,6 +33,7 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [activeFilter, setActiveFilter] = useState<'today' | 'week' | 'month' | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
 
   // Drawer
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -52,11 +54,24 @@ export default function AppointmentsPage() {
   const handleSwitchToCalendar = () => {
     // ✅ Reset filters when switching to calendar
     if (activeFilter) setActiveFilter(null);
+    if (selectedDate) setSelectedDate(null);
     setViewMode('calendar');
   };
 
   const handleSwitchToList = () => {
     setViewMode('list');
+  };
+
+  const handleDateChange = (date: Dayjs | null) => {
+    setSelectedDate(date);
+    // Clear active filter when selecting a specific date
+    if (date && activeFilter) {
+      setActiveFilter(null);
+    }
+  };
+
+  const handleClearDateFilter = () => {
+    setSelectedDate(null);
   };
 
   const columns: ColumnsType<AppointmentData> = [
@@ -163,17 +178,28 @@ export default function AppointmentsPage() {
   }, []);
 
   const filteredAppointments = useMemo(() => {
-    if (!activeFilter) return appointments;
+    let filtered = appointments;
 
-    return appointments.filter((appt) => {
-      const apptDate = dayjs(appt.rawDate);
-      if (activeFilter === 'today') return apptDate.isSame(dayjs(), 'day');
-      if (activeFilter === 'week')
-        return apptDate.isBetween(dayjs().startOf('week'), dayjs().endOf('week'), null, '[]');
-      if (activeFilter === 'month') return apptDate.isSame(dayjs(), 'month');
-      return true;
-    });
-  }, [appointments, activeFilter]);
+    // Apply date picker filter first
+    if (selectedDate) {
+      filtered = filtered.filter((appt) =>
+        dayjs(appt.rawDate).isSame(selectedDate, 'day')
+      );
+    }
+    // Apply quick filter if no specific date is selected
+    else if (activeFilter) {
+      filtered = filtered.filter((appt) => {
+        const apptDate = dayjs(appt.rawDate);
+        if (activeFilter === 'today') return apptDate.isSame(dayjs(), 'day');
+        if (activeFilter === 'week')
+          return apptDate.isBetween(dayjs().startOf('week'), dayjs().endOf('week'), null, '[]');
+        if (activeFilter === 'month') return apptDate.isSame(dayjs(), 'month');
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [appointments, activeFilter, selectedDate]);
 
   const statsCards = [
     {
@@ -207,14 +233,17 @@ export default function AppointmentsPage() {
       {/* --- Stats Cards --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {statsCards.map((card) => {
-          const isActive = activeFilter === card.key;
+          const isActive = activeFilter === card.key && !selectedDate;
           const isDisabled = viewMode === 'calendar';
 
           return (
             <div
               key={card.key}
               onClick={() => {
-                if (!isDisabled) setActiveFilter(isActive ? null : (card.key as any));
+                if (!isDisabled) {
+                  setActiveFilter(isActive ? null : (card.key as any));
+                  setSelectedDate(null); // Clear date picker when using quick filter
+                }
               }}
               className={`${card.bgColor} rounded-3xl p-6 cursor-pointer transition transform
                 ${isActive ? 'ring-4 ring-offset-2 ring-purple-400' : ''}
@@ -238,7 +267,7 @@ export default function AppointmentsPage() {
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-medium text-gray-800">Appointments</h2>
-            {activeFilter && viewMode === 'list' && (
+            {activeFilter && viewMode === 'list' && !selectedDate && (
               <Tag
                 color="purple"
                 className="text-sm cursor-pointer flex items-center"
@@ -252,8 +281,30 @@ export default function AppointmentsPage() {
                 </div>
               </Tag>
             )}
+            {selectedDate && viewMode === 'list' && (
+              <Tag
+                color="blue"
+                className="text-sm cursor-pointer flex items-center"
+                onClick={handleClearDateFilter}
+              >
+                <div className="flex items-center">
+                  {selectedDate.format('MMM DD, YYYY')}
+                  <X className="w-3 h-3 ml-1" />
+                </div>
+              </Tag>
+            )}
           </div>
           <div className="flex gap-2">
+            {viewMode === 'list' && (
+              <DatePicker
+                value={selectedDate}
+                onChange={handleDateChange}
+                placeholder="Select date"
+                format="MM-DD-YYYY"
+                className="w-40"
+                allowClear
+              />
+            )}
             <Button
               icon={<CalendarOutlined />}
               type={viewMode === 'calendar' ? 'primary' : 'default'}

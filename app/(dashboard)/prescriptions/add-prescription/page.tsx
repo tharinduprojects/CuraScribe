@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, App, Spin, notification } from 'antd';
-import { ArrowLeftOutlined, AudioOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import api from '@/app/lib/axios';
+import FloatingVoiceInput from '@/app/components/FloatingVoiceInput';
 
 const { TextArea } = Input;
 
@@ -21,30 +22,10 @@ function AddPrescriptionContent() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isListening, setIsListening] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
   const [notify, contextHolder] = notification.useNotification();
-
 
   useEffect(() => {
     fetchPatients();
-
-    // Initialize Speech Recognition
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = false;
-        recognitionRef.current.lang = 'en-US';
-      }
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
   }, []);
 
   const fetchPatients = async () => {
@@ -106,42 +87,8 @@ function AddPrescriptionContent() {
     form.resetFields();
   };
 
-  const startListening = (fieldName: string) => {
-    if (!recognitionRef.current) {
-      message.error('Speech recognition is not supported in your browser');
-      return;
-    }
-
-    if (isListening === fieldName) {
-      recognitionRef.current.stop();
-      setIsListening(null);
-      return;
-    }
-
-    setIsListening(fieldName);
-
-    recognitionRef.current.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      const currentValue = form.getFieldValue(fieldName) || '';
-      const newValue = currentValue ? `${currentValue} ${transcript}` : transcript;
-      form.setFieldsValue({ [fieldName]: newValue });
-    };
-
-    recognitionRef.current.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      message.error(`Speech recognition error: ${event.error}`);
-      setIsListening(null);
-    };
-
-    recognitionRef.current.onend = () => {
-      setIsListening(null);
-    };
-
-    recognitionRef.current.start();
-  };
-
   return (
-    <div>
+    <div className="pb-20">
       {contextHolder}
       {/* Header */}
       <div className="mb-6">
@@ -194,15 +141,7 @@ function AddPrescriptionContent() {
             >
               <Input
                 placeholder="e.g., Dr. John Doe"
-                suffix={
-                  <Button
-                    shape="circle"
-                    size='small'
-                    icon={<AudioOutlined style={{ color: isListening === 'doctor_name' ? '#ffffff' : undefined }} />}
-                    onClick={() => startListening('doctor_name')}
-                    className={`${isListening === 'doctor_name' ? '!bg-red-500 animate-pulse' : ''}`}
-                  />
-                }
+                size="large"
               />
             </Form.Item>
           </div>
@@ -216,15 +155,7 @@ function AddPrescriptionContent() {
             >
               <Input
                 placeholder="e.g., Amoxicillin"
-                suffix={
-                  <Button
-                    shape="circle"
-                    size='small'
-                    icon={<AudioOutlined style={{ color: isListening === 'medication_name' ? '#ffffff' : undefined }} />}
-                    onClick={() => startListening('medication_name')}
-                    className={`${isListening === 'medication_name' ? '!bg-red-500 animate-pulse' : ''}`}
-                  />
-                }
+                size="large"
               />
             </Form.Item>
 
@@ -236,15 +167,7 @@ function AddPrescriptionContent() {
             >
               <Input
                 placeholder="e.g., 500mg"
-                suffix={
-                  <Button
-                    shape="circle"
-                    size='small'
-                    icon={<AudioOutlined style={{ color: isListening === 'dosage' ? '#ffffff' : undefined }} />}
-                    onClick={() => startListening('dosage')}
-                    className={`${isListening === 'dosage' ? '!bg-red-500 animate-pulse' : ''}`}
-                  />
-                }
+                size="large"
               />
             </Form.Item>
           </div>
@@ -258,15 +181,7 @@ function AddPrescriptionContent() {
             >
               <Input
                 placeholder="e.g., Twice daily"
-                suffix={
-                  <Button
-                    shape="circle"
-                    size='small'
-                    icon={<AudioOutlined style={{ color: isListening === 'frequency' ? '#ffffff' : undefined }} />}
-                    onClick={() => startListening('frequency')}
-                    className={`${isListening === 'frequency' ? '!bg-red-500 animate-pulse' : ''}`}
-                  />
-                }
+                size="large"
               />
             </Form.Item>
           </div>
@@ -278,19 +193,10 @@ function AddPrescriptionContent() {
               name="instructions"
               rules={[{ required: true, message: 'Please enter instructions' }]}
             >
-              <div className="relative">
-                <TextArea
-                  rows={4}
-                  placeholder="Additional instructions (e.g., Take with food, avoid alcohol...)"
-                />
-                <Button
-                  shape="circle"
-                  size='small'
-                  icon={<AudioOutlined style={{ color: isListening === 'instructions' ? '#ffffff' : undefined }} />}
-                  onClick={() => startListening('instructions')}
-                  className={`absolute top-2 right-2 z-10 ${isListening === 'instructions' ? '!bg-red-500 animate-pulse' : ''}`}
-                />
-              </div>
+              <TextArea
+                rows={4}
+                placeholder="Additional instructions (e.g., Take with food, avoid alcohol...)"
+              />
             </Form.Item>
           </div>
 
@@ -311,6 +217,9 @@ function AddPrescriptionContent() {
           </div>
         </Form>
       </div>
+
+      {/* Floating Voice Input Button */}
+      <FloatingVoiceInput form={form} />
     </div>
   );
 }
